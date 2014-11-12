@@ -31,6 +31,9 @@ Pod::Spec.new do |s|
         :git => 'https://github.com/cerupcat/MWPhotoBrowser.git',
         :tag => '1.4.1'
     }
+    s.source = {
+        :git => 'https://github.com/cerupcat/WPMoviePlayerController.git',
+    }
     s.platform = :ios, '7.1'
     s.source_files = 'MWPhotoBrowser/Classes/*.{h,m}'
     s.resources = 'MWPhotoBrowser/MWPhotoBrowser.bundle'
