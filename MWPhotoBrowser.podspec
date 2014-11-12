@@ -1,3 +1,6 @@
+source 'https://github.com/CocoaPods/Specs.git'
+source 'https://github.com/cerupcat/WPMoviePlayerController.git'
+
 Pod::Spec.new do |s|
     s.name = 'MWPhotoBrowser'
     s.version = '1.4.1'
