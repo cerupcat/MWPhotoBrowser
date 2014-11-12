@@ -40,5 +40,5 @@ Pod::Spec.new do |s|
     s.dependency 'MBProgressHUD', '~> 0.8'
     s.dependency 'DACircularProgress'
     s.dependency 'PSTCollectionView', '~> 1.2'
-    s.dependency 'ALMoviePlayerController', :git => 'https://github.com/cerupcat/ALMoviePlayerController'
+    s.dependency 'WPMoviePlayerController'
 end
