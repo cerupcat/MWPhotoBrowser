@@ -6,6 +6,7 @@
 //
 //
 
+#import <MediaPlayer/MediaPlayer.h>
 #import "MWGridViewController.h"
 #import "MWGridCell.h"
 #import "MWPhotoBrowserPrivate.h"
@@ -15,7 +16,6 @@
     
     // Store margins for current setup
     CGFloat _margin, _gutter, _marginL, _gutterL, _columns, _columnsL;
-    
 }
 
 @end
@@ -36,14 +36,14 @@
             _columns = 6, _columnsL = 8;
             _margin = 1, _gutter = 2;
             _marginL = 1, _gutterL = 2;
-        } else if ([UIScreen mainScreen].bounds.size.height == 480) {
+        } else if ([UIScreen mainScreen].bounds.size.width <= 320) {
             // iPhone 3.5 inch
             _columns = 3, _columnsL = 4;
             _margin = 0, _gutter = 1;
             _marginL = 1, _gutterL = 2;
         } else {
             // iPhone 4 inch
-            _columns = 3, _columnsL = 5;
+            _columns = 4, _columnsL = 5;
             _margin = 0, _gutter = 1;
             _marginL = 0, _gutterL = 2;
         }
@@ -60,7 +60,7 @@
     [super viewDidLoad];
     [self.collectionView registerClass:[MWGridCell class] forCellWithReuseIdentifier:@"GridCell"];
     self.collectionView.alwaysBounceVertical = YES;
-    self.collectionView.backgroundColor = [UIColor blackColor];
+    self.collectionView.backgroundColor = [UIColor whiteColor];
 }
 
 - (void)viewWillDisappear:(BOOL)animated {
@@ -158,7 +158,15 @@
         cell = [[MWGridCell alloc] init];
     }
     id <MWPhoto> photo = [_browser thumbPhotoAtIndex:indexPath.row];
+    
     cell.photo = photo;
+    
+    if([(MWPhoto*)photo isVideo]){
+        cell.isVideo = YES;
+    }else{
+        cell.isVideo = NO;
+    }
+    
     cell.gridController = self;
     cell.selectionMode = _selectionMode;
     cell.isSelected = [_browser photoIsSelectedAtIndex:indexPath.row];
@@ -173,9 +181,50 @@
 }
 
 - (void)collectionView:(PSTCollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
-    [_browser setCurrentPhotoIndex:indexPath.row];
-    [_browser hideGrid];
+    
+    id <MWPhoto> archive = [_browser photoAtIndex:indexPath.row];
+    
+    if([(MWPhoto*)archive isVideo]){
+    
+        NSURL *movieURL=[(MWPhoto*)archive photoURL];
+        MPMoviePlayerViewController *moviePlayerController =[[MPMoviePlayerViewController alloc] initWithContentURL:movieURL];
+        
+       
+        //set movieplayer view
+        CGRect viewInsetRect = CGRectInset ([self.view bounds],
+                                            20,
+                                            20 );
+        [moviePlayerController.view setFrame:viewInsetRect];
+        
+        moviePlayerController.moviePlayer.controlStyle = MPMovieControlStyleFullscreen;
+        
+        [self presentMoviePlayerViewControllerAnimated:moviePlayerController];
+        [moviePlayerController.moviePlayer prepareToPlay];
+        
+        moviePlayerController.view.backgroundColor = [UIColor whiteColor];
+        
+        moviePlayerController.moviePlayer.view.backgroundColor = [UIColor whiteColor];
+        
+
+        //don't dismiss when done
+        [[NSNotificationCenter defaultCenter] removeObserver:moviePlayerController
+                                                        name:MPMoviePlayerPlaybackDidFinishNotification object:moviePlayerController.moviePlayer];
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(videoFinished:) name:MPMoviePlayerPlaybackDidFinishNotification object:moviePlayerController.moviePlayer];
+        
+    }else{
+        [_browser setCurrentPhotoIndex:indexPath.row];
+        [_browser hideGrid];
+    }
 }
+
+-(void)videoFinished:(NSNotification*)aNotification{
+    int value = [[aNotification.userInfo valueForKey:MPMoviePlayerPlaybackDidFinishReasonUserInfoKey] intValue];
+    if (value == MPMovieFinishReasonUserExited) {
+        [self dismissMoviePlayerViewControllerAnimated];
+    }
+}
+
 
 - (void)collectionView:(PSTCollectionView *)collectionView didEndDisplayingCell:(PSTCollectionViewCell *)cell forItemAtIndexPath:(NSIndexPath *)indexPath {
     [((MWGridCell *)cell).photo cancelAnyLoading];

@@ -1020,10 +1020,19 @@
 			break;
 		case 7: {
             @synchronized(_assets) {
+                
+                startOnGrid = YES;
+                displayActionButton = NO;
+                displaySelectionButtons = NO;
+                
                 NSMutableArray *copy = [_assets copy];
                 for (ALAsset *asset in copy) {
-                    [photos addObject:[MWPhoto photoWithURL:asset.defaultRepresentation.url]];
-                    [thumbs addObject:[MWPhoto photoWithImage:[UIImage imageWithCGImage:asset.thumbnail]]];
+                  //  [photos addObject:[MWPhoto photoWithURL:asset.defaultRepresentation.url]];
+                  //  [thumbs addObject:[MWPhoto photoWithImage:[UIImage imageWithCGImage:asset.thumbnail]]];
+                    
+                    NSNumber * value = [asset valueForProperty:ALAssetPropertyDuration]; //Find the Duraion
+                    [photos addObject:[MWPhoto videoWithURL:asset.defaultRepresentation.url andDuration:value]];
+                    [thumbs addObject:[MWPhoto videoWithImage:[UIImage imageWithCGImage:asset.thumbnail] andDuration:value]];
                 }
             }
 			break;
@@ -1039,7 +1048,9 @@
     browser.displayNavArrows = displayNavArrows;
     browser.displaySelectionButtons = displaySelectionButtons;
     browser.alwaysShowControls = displaySelectionButtons;
-    browser.zoomPhotosToFill = YES;
+    browser.zoomPhotosToFill = NO;
+    
+    
 #if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_7_0
     browser.wantsFullScreenLayout = YES;
 #endif
@@ -1168,7 +1179,7 @@
         // Process assets
         void (^assetEnumerator)(ALAsset *, NSUInteger, BOOL *) = ^(ALAsset *result, NSUInteger index, BOOL *stop) {
             if (result != nil) {
-                if ([[result valueForProperty:ALAssetPropertyType] isEqualToString:ALAssetTypePhoto]) {
+                if ([[result valueForProperty:ALAssetPropertyType] isEqualToString:ALAssetTypeVideo]) {
                     [assetURLDictionaries addObject:[result valueForProperty:ALAssetPropertyURLs]];
                     NSURL *url = result.defaultRepresentation.url;
                     [_assetLibrary assetForURL:url
