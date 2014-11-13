@@ -1074,7 +1074,6 @@
     } else {
         // Modal
         UINavigationController *nc = [[UINavigationController alloc] initWithRootViewController:browser];
-        nc.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
         [self presentViewController:nc animated:YES completion:nil];
     }
     
@@ -1129,16 +1128,6 @@
     return nil;
 }
 
-//- (MWCaptionView *)photoBrowser:(MWPhotoBrowser *)photoBrowser captionViewForPhotoAtIndex:(NSUInteger)index {
-//    MWPhoto *photo = [self.photos objectAtIndex:index];
-//    MWCaptionView *captionView = [[MWCaptionView alloc] initWithPhoto:photo];
-//    return [captionView autorelease];
-//}
-
-//- (void)photoBrowser:(MWPhotoBrowser *)photoBrowser actionButtonPressedForPhotoAtIndex:(NSUInteger)index {
-//    NSLog(@"ACTION!");
-//}
-
 - (void)photoBrowser:(MWPhotoBrowser *)photoBrowser didDisplayPhotoAtIndex:(NSUInteger)index {
     NSLog(@"Did start viewing photo at index %lu", (unsigned long)index);
 }
@@ -1147,13 +1136,17 @@
     return [[_selections objectAtIndex:index] boolValue];
 }
 
-//- (NSString *)photoBrowser:(MWPhotoBrowser *)photoBrowser titleForPhotoAtIndex:(NSUInteger)index {
-//    return [NSString stringWithFormat:@"Photo %lu", (unsigned long)index+1];
-//}
-
 - (void)photoBrowser:(MWPhotoBrowser *)photoBrowser photoAtIndex:(NSUInteger)index selectedChanged:(BOOL)selected {
     [_selections replaceObjectAtIndex:index withObject:[NSNumber numberWithBool:selected]];
     NSLog(@"Photo at index %lu selected %@", (unsigned long)index, selected ? @"YES" : @"NO");
+    
+    if (selected) {
+        [self dismissViewControllerAnimated:YES completion:nil];
+        [self.navigationController popViewControllerAnimated:YES];
+        
+        MWPhoto * photo = [_photos objectAtIndex:index];
+        NSLog(@"%@", [photo photoURL]);
+    }
 }
 
 - (void)photoBrowserDidFinishModalPresentation:(MWPhotoBrowser *)photoBrowser {
@@ -1216,7 +1209,6 @@
                                        failureBlock:^(NSError *error) {
                                            NSLog(@"There is an error");
                                        }];
-        
     });
     
 }

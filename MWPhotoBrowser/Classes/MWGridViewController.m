@@ -12,11 +12,17 @@
 #import "MWPhotoBrowserPrivate.h"
 #import "MWCommon.h"
 
-@interface MWGridViewController () {
+#import <WPMoviePlayerController/ALMoviePlayerControls.h>
+#import <WPMoviePlayerController/ALMoviePlayerController.h>
+
+@interface MWGridViewController ()<ALMoviePlayerControlsDelegate> {
     
     // Store margins for current setup
     CGFloat _margin, _gutter, _marginL, _gutterL, _columns, _columnsL;
+    NSUInteger selectedItem;
 }
+
+@property (nonatomic, strong) ALMoviePlayerController *moviePlayer;
 
 @end
 
@@ -34,18 +40,18 @@
         if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
             // iPad
             _columns = 6, _columnsL = 8;
-            _margin = 1, _gutter = 2;
-            _marginL = 1, _gutterL = 2;
+            _margin = 1, _gutter = 2/[[UIScreen mainScreen] scale];
+            _marginL = 1, _gutterL = 2/[[UIScreen mainScreen] scale];
         } else if ([UIScreen mainScreen].bounds.size.width <= 320) {
             // iPhone 3.5 inch
             _columns = 3, _columnsL = 4;
-            _margin = 0, _gutter = 1;
-            _marginL = 1, _gutterL = 2;
+            _margin = 0, _gutter = 1/[[UIScreen mainScreen] scale];
+            _marginL = 1, _gutterL = 2/[[UIScreen mainScreen] scale];
         } else {
             // iPhone 4 inch
             _columns = 4, _columnsL = 5;
-            _margin = 0, _gutter = 1;
-            _marginL = 0, _gutterL = 2;
+            _margin = 0, _gutter = 1/[[UIScreen mainScreen] scale];
+            _marginL = 0, _gutterL = 2/[[UIScreen mainScreen] scale];
         }
 
         _initialContentOffset = CGPointMake(0, CGFLOAT_MAX);
@@ -185,46 +191,58 @@
     id <MWPhoto> archive = [_browser photoAtIndex:indexPath.row];
     
     if([(MWPhoto*)archive isVideo]){
+        
+        selectedItem = indexPath.row;
     
         NSURL *movieURL=[(MWPhoto*)archive photoURL];
-        MPMoviePlayerViewController *moviePlayerController =[[MPMoviePlayerViewController alloc] initWithContentURL:movieURL];
         
-       
-        //set movieplayer view
-        CGRect viewInsetRect = CGRectInset ([self.view bounds],
-                                            20,
-                                            20 );
-        [moviePlayerController.view setFrame:viewInsetRect];
+        //create a player
+        self.moviePlayer = [[ALMoviePlayerController alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height)];
         
-        moviePlayerController.moviePlayer.controlStyle = MPMovieControlStyleFullscreen;
+        //create the controls
+        ALMoviePlayerControls *movieControls = [[ALMoviePlayerControls alloc] initWithMoviePlayer:self.moviePlayer style:ALMoviePlayerControlsStyleDefault];
         
-        [self presentMoviePlayerViewControllerAnimated:moviePlayerController];
-        [moviePlayerController.moviePlayer prepareToPlay];
+        [movieControls setBarColor:[UIColor colorWithWhite:0.5 alpha:0.2]];
+        [movieControls setTimeRemainingDecrements:YES];
+        [movieControls setBarHeight:100.f];
+        [movieControls setDelegate:self];
         
-        moviePlayerController.view.backgroundColor = [UIColor whiteColor];
+        //assign controls
+        [self.moviePlayer setControls:movieControls];
         
-        moviePlayerController.moviePlayer.view.backgroundColor = [UIColor whiteColor];
+        //THEN set contentURL
+        [self.moviePlayer stop];
+        [self.moviePlayer setContentURL:movieURL];
+        [self.moviePlayer play];
         
+        [self.moviePlayer setFullscreen:YES animated:YES];
 
-        //don't dismiss when done
-        [[NSNotificationCenter defaultCenter] removeObserver:moviePlayerController
-                                                        name:MPMoviePlayerPlaybackDidFinishNotification object:moviePlayerController.moviePlayer];
-        [[NSNotificationCenter defaultCenter] addObserver:self
-                                                 selector:@selector(videoFinished:) name:MPMoviePlayerPlaybackDidFinishNotification object:moviePlayerController.moviePlayer];
-        
     }else{
         [_browser setCurrentPhotoIndex:indexPath.row];
         [_browser hideGrid];
     }
 }
 
--(void)videoFinished:(NSNotification*)aNotification{
-    int value = [[aNotification.userInfo valueForKey:MPMoviePlayerPlaybackDidFinishReasonUserInfoKey] intValue];
-    if (value == MPMovieFinishReasonUserExited) {
-        [self dismissMoviePlayerViewControllerAnimated];
-    }
+#pragma ALMoviePlayerControlsDelegate
+
+- (void)didCancel
+{
+    //exit full screen
+    [self.moviePlayer setFullscreen:NO];
+    self.moviePlayer = nil;
 }
 
+- (void)didChoose
+{
+    //exit full screen
+    [self.moviePlayer setFullscreen:NO];
+    self.moviePlayer = nil;
+    
+    //select the photo since it was chosen
+    [_browser setDisplaySelectionButtons:YES];
+    [_browser setPhotoSelected:YES atIndex:selectedItem];
+    [_browser setDisplaySelectionButtons:NO];
+}
 
 - (void)collectionView:(PSTCollectionView *)collectionView didEndDisplayingCell:(PSTCollectionViewCell *)cell forItemAtIndexPath:(NSIndexPath *)indexPath {
     [((MWGridCell *)cell).photo cancelAnyLoading];
