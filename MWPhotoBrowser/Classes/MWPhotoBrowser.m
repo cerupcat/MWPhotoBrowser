@@ -655,6 +655,10 @@
         [self.view setNeedsLayout];
     }
     
+    //  Update grid if it's presented
+    if (_gridController) {
+        [_gridController.collectionView reloadData];
+    }
 }
 
 - (NSUInteger)numberOfPhotos {
